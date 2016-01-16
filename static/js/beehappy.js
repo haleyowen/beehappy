@@ -8,11 +8,16 @@ $(function(){
 
   $('.bh-form').submit(function(event) {
     var form = event.target;
+    var isInsult = false;
+
     for (var i = 0; i < form.length; i++) {
-      if(form[i].class == "beehappy") {
+      if (form[i].className.indexOf("beehappy") > -1) {
         console.log(form[i]);
       }
     }
-    event.preventDefault();
+
+    if (isInsult) {
+      event.preventDefault();
+    }
   });
 });
