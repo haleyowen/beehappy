@@ -61,13 +61,13 @@ class FeatureDetector():
         wrong = 0
         total = 0
 
-        for word in sentence.split():
+        for word in self.tokenizer.tokenize(sentence):
             if not self.checker.check(word):
                 print(word)
                 wrong += 1
             total += 1
 
-        return float(wrong) / (total - wrong)
+        return float(wrong) / (total)
 
     # goes through all the features and returns an array of values
     def vector(self, sentence):
@@ -117,6 +117,8 @@ def read_solutions(filename="test_with_solutions.csv"):
 
     print(float(correct) / total)
     print(train_X[0])
+
+    return logreg
 
 
 if __name__ == "__main__":
