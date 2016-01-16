@@ -16,9 +16,11 @@ def api_root():
 
 @application.route("/bh-validate", methods=["POST"])
 def api_behappy():
-    data = request.get_json()
-    messages = data["messages"]
+    messages = list()
     valid = list()
+
+    if "messageList" in request.get_json():
+        messages = request.get_json()["messageList"]
     for msg in messages:
         valid.append(is_insult(msg))
     return json.dumps({"messages": valid})
