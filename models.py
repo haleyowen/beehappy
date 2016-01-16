@@ -1,4 +1,5 @@
 import csv
+import re
 
 import enchant
 
@@ -31,10 +32,10 @@ class FeatureDetector():
 
         # list of function pointers of all features
         self.features = [self.ratio_bad_words,
-                         self.ratio_cap_characters,
-                         self.ratio_mispelled]
+                self.ratio_cap_characters,
+                self.ratio_mispelled]
 
-    # ratio of bad words to good words
+        # ratio of bad words to good words
     def ratio_bad_words(self, sentence):
         result = 0
 
@@ -69,7 +70,29 @@ class FeatureDetector():
 
         return float(wrong) / (total)
 
-    # goes through all the features and returns an array of values
+    def number_word_symbols(self, sentence):
+        sym_words = 0
+
+        print(sentence)
+        print(re.split(r"[,'\" ]", sentence))
+        for word in re.split(r"[,'\" ]", sentence):
+            sym = 0
+            let = 0
+            while word and (word[-1] == '!' or word[-1] == '.' or word[-1] == '?'):
+                word = word[:-1]
+                
+            for c in word:
+                if c.isalpha():
+                    sym += 1
+                elif not c.isalpha():
+                    let += 1
+            if sym > 0 and let > 0:
+                print(word)
+                sym_words += 1
+        
+        return sym_words
+
+        # goes through all the features and returns an array of values
     def vector(self, sentence):
         feature_vector = [0 for _ in self.features]
 
@@ -122,6 +145,9 @@ def read_solutions(filename="test_with_solutions.csv"):
 
 
 if __name__ == "__main__":
-    read_solutions()
+    fd = FeatureDetector()
+    sentence = "Brady thinks he's so good but he's a nigg4h b!tch niceword! hrmhrmmrhrm ???"
+    print(fd.number_word_symbols(sentence))
+
 
     # do something with this later
