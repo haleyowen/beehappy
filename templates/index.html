@@ -10,9 +10,9 @@
     <ul id="message_list"></ul>
 
     New Message:
-    <form class="bh-form">
-      <input type="text" name="post_message" class="beehappy" id="post_message" />
-      <input type="submit" name="post_button" id="post_button" value="Post" />
+    <form class="bh-form" action="/messages" method="post">
+      <input type="text" name="post_message" class="beehappy" id="post_message">
+      <input type="submit" value="Submit">
     </form>
 
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
