@@ -8,11 +8,18 @@ import random
 application = Flask(__name__, static_folder="static")
 application.config['DEBUG'] = True
 
+messages = ["test halay"]
+
 
 @application.route("/")
 def api_root():
-    return render_template("box.html")
+    return render_template("index.html")
 
+@application.route("/messages", methods=["GET"])
+def api_get_messages():
+    global messages
+    return json.dumps(messages)
+  
 
 @application.route("/bh-validate", methods=["POST"])
 def api_behappy():
