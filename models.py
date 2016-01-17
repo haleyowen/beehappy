@@ -5,7 +5,13 @@ import enchant
 
 import numpy as np
 
+from scipy import sparse
+
+from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
+from sklearn.base import BaseEstimator
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_selection import SelectPercentile, chi2
 
 from nltk.stem.lancaster import LancasterStemmer
 from nltk.tokenize import TweetTokenizer
@@ -32,8 +38,8 @@ class FeatureDetector():
 
         # list of function pointers of all features
         self.features = [self.ratio_bad_words,
-                self.ratio_cap_characters,
-                self.ratio_mispelled]
+                         self.ratio_cap_characters,
+                         self.ratio_mispelled]
 
         # ratio of bad words to good words
     def ratio_bad_words(self, sentence):
@@ -64,7 +70,6 @@ class FeatureDetector():
 
         for word in self.tokenizer.tokenize(sentence):
             if not self.checker.check(word):
-                print(word)
                 wrong += 1
             total += 1
 
@@ -80,7 +85,7 @@ class FeatureDetector():
             let = 0
             while word and (word[-1] == '!' or word[-1] == '.' or word[-1] == '?'):
                 word = word[:-1]
-                
+
             for c in word:
                 if c.isalpha():
                     sym += 1
@@ -89,7 +94,7 @@ class FeatureDetector():
             if sym > 0 and let > 0:
                 print(word)
                 sym_words += 1
-        
+
         return sym_words
 
         # goes through all the features and returns an array of values
@@ -117,9 +122,6 @@ def read_solutions(filename="test_with_solutions.csv"):
 
             data.append((is_insult, sentence, sentence_features))
 
-            # find each feature value for this sentence
-            # print(sentence_features, is_insult)
-
     train_X = [tup[2] for tup in data[:2000]]
     train_Y = [tup[0] for tup in data[:2000]]
 
@@ -133,21 +135,65 @@ def read_solutions(filename="test_with_solutions.csv"):
     correct = 0
     total = 0
 
-    for X, Y in zip(test_data, test_answer):
-        result = logreg.predict(X)
+    result = logreg.predict(test_data)
+
+    for predicted, actual in zip(result, test_answer):
         total += 1
-        correct += result == Y
+        correct += (predicted == actual)
 
     print(float(correct) / total)
-    print(train_X[0])
 
     return logreg
 
+
+class FeatureStacker(BaseEstimator):
+    """Stacks several transformer objects to yield concatenated features.
+    Similar to pipeline, a list of tuples ``(name, estimator)`` is passed
+    to the constructor.
+    """
+    def __init__(self, transformer_list):
+        self.transformer_list = transformer_list
+
+    def get_feature_names(self):
+        pass
+
+    def fit(self, X, y=None):
+        for name, trans in self.transformer_list:
+            trans.fit(X, y)
+        return self
+
+    def transform(self, X):
+        features = []
+        for name, trans in self.transformer_list:
+            features.append(trans.transform(X))
+        issparse = [sparse.issparse(f) for f in features]
+        if np.any(issparse):
+            features = sparse.hstack(features).tocsr()
+        else:
+            features = np.hstack(features)
+        return features
+
+    def get_params(self, deep=True):
+        if not deep:
+            return super(FeatureStacker, self).get_params(deep=False)
+        else:
+            out = dict(self.transformer_list)
+            for name, trans in self.transformer_list:
+                for key, value in trans.get_params(deep=True).iteritems():
+                    out['%s__%s' % (name, key)] = value
+            return out
 
 if __name__ == "__main__":
     fd = FeatureDetector()
     sentence = "Brady thinks he's so good but he's a nigg4h b!tch niceword! hrmhrmmrhrm ???"
     print(fd.number_word_symbols(sentence))
 
+    a = read_solutions()
+    print(a.get_params())
 
-    # do something with this later
+    select = SelectPercentile(score_func=chi2, percentile=18)
+    clf = LogisticRegression(tol=1e-8, penalty='l2', C=7)
+    countvect_char = TfidfVectorizer(ngram_range=(1, 5), analyzer="char", binary=False)
+    badwords = BadWordCounter()
+    ft = FeatureStacker([("badwords", badwords), ("chars", countvect_char), ])
+    char_model = Pipeline([('vect', ft), ('select', select), ('logr', clf)])
