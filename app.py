@@ -1,23 +1,26 @@
 from flask import Flask, render_template, request
 
 import json
-
 import random
 
+from models import *
 
 application = Flask(__name__, static_folder="static")
 application.config['DEBUG'] = True
 
-MESSAGES = ["test halay"]
+
+MESSAGES = ["test"]
+GRADER = read_solutions()
+FEATURE_DETECTOR = FeatureDetector()
 
 
 @application.route("/")
 def api_root():
     return render_template("index.html")
 
+
 @application.route("/messages", methods=["GET", "POST"])
 def api_messages():
-    print("/messages hit", request.method)
     if request.method == "GET":
         return json.dumps({i: {"text": MESSAGES[i]} for i in range(len(MESSAGES))})
 
@@ -27,6 +30,7 @@ def api_messages():
         MESSAGES.append(msg)
 
     return api_root()
+
 
 @application.route("/bh-validate", methods=["POST"])
 def api_behappy():
@@ -39,7 +43,9 @@ def api_behappy():
     for msg in messages:
         valid.append(is_insult(msg))
 
-    return json.dumps({"messages": valid})
+    print(valid)
+
+    return json.dumps({"messages": list(valid)})
 
 
 @application.route("/behappy-form", methods=["POST"])
@@ -48,7 +54,9 @@ def next_page():
 
 
 def is_insult(message):
-    return random.random() > 0.5
+    feature_vector = FEATURE_DETECTOR.vector(message)
+    prediction = GRADER.predict(feature_vector)
+    return bool(prediction[0])
 
 
 if __name__ == "__main__":
