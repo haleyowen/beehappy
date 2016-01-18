@@ -5,8 +5,6 @@ import enchant
 
 import numpy as np
 
-from scipy import sparse
-
 from sklearn.linear_model import LogisticRegression
 
 from nltk.stem.lancaster import LancasterStemmer
@@ -48,7 +46,7 @@ class FeatureDetector():
             if word in self.badwords or stemmed in self.badwords:
                 result += 1
 
-        return float(result) / (len(sentence) - result)
+        return float(result) / len(sentence)
 
     def ratio_cap_characters(self, sentence):
         caps = 0
@@ -58,7 +56,7 @@ class FeatureDetector():
             caps += sum(char.isupper() for char in word)
             total += len(word)
 
-        return float(caps) / (total - caps)
+        return float(caps) / total
 
     def ratio_mispelled(self, sentence):
         wrong = 0
@@ -77,6 +75,7 @@ class FeatureDetector():
         for word in re.split(r"[,'\" ]", sentence):
             sym = 0
             let = 0
+
             while word and (word[-1] == '!' or word[-1] == '.' or word[-1] == '?'):
                 word = word[:-1]
 
@@ -120,7 +119,7 @@ def read_solutions(filename="test_with_solutions.csv"):
     train_Y = [tup[0] for tup in data[:2000]]
 
     test_data = [tup[2] for tup in data[2000:]]
-    test_answer = [tup[0] for tup in data[2000:]]
+    test_answer = [[tup[0], tup[1]] for tup in data[2000:]]
 
     logreg = LogisticRegression(tol=1e-8, penalty='l2', C=1.5)
 
@@ -133,7 +132,9 @@ def read_solutions(filename="test_with_solutions.csv"):
 
     for predicted, actual in zip(result, test_answer):
         total += 1
-        correct += (predicted == actual)
+        correct += (predicted == actual[0])
+        if predicted == actual[0] and predicted:
+            print(actual[1])
 
     print(float(correct) / total)
 

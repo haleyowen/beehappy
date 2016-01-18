@@ -1,9 +1,8 @@
+import json
+
 from flask import Flask, render_template, request
 
-import json
-import random
-
-from models import *
+from models import FeatureDetector, read_solutions
 
 application = Flask(__name__, static_folder="static")
 application.config['DEBUG'] = True
@@ -43,14 +42,7 @@ def api_behappy():
     for msg in messages:
         valid.append(is_insult(msg))
 
-    print(valid)
-
     return json.dumps({"messages": list(valid)})
-
-
-@application.route("/behappy-form", methods=["POST"])
-def next_page():
-    return render_template("success.html")
 
 
 def is_insult(message):
